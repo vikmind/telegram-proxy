@@ -3,16 +3,24 @@ module.exports = (req, res) => {
     path: require('url').parse(req.url, true).path,
     method: req.method,
     hostname: 'api.telegram.org',
+    headers: {
+      'Content-Type': 'application/json',
+    },
   };
   const apiRequest = require('https').request(options, apiResponse => {
-    apiResponse.pipe(res, {
-      end: true
+    let data = '';
+    apiResponse.on('data', (chunk) => {
+      data += chunk.toString();
+    });
+    apiResponse.on('end', () => {
+      res.write(data);
+      res.end();
     });
   });
   if (req.method === 'POST') {
     let body = '';
     req.on('data', chunk => {
-      body += chunk.toString(); // convert Buffer to string
+      body += chunk;
     });
     req.on('end', () => {
       apiRequest.write(body);
@@ -21,5 +29,4 @@ module.exports = (req, res) => {
   } else {
     apiRequest.end();
   }
-  // req.pipe(apiRequest, { end: true });
 }
